@@ -350,7 +350,27 @@ function refresh() {
 }
 analysis.onProgress = refresh;
 
-function queueLabel() { return spotify.connected ? "+ À la suite" : ""; }
+// lecteur choisi sur cet appareil : change le bouton principal de chaque suggestion
+let player = store.get("player", null) || (spotify.connected ? "spotify" : "deezer");
+function primaryButton(t, i) {
+  if (player === "spotify" && spotify.connected)
+    return `<button class="q" data-q="${i}" ${adding.has(t.id) ? "disabled" : ""}>${adding.has(t.id) ? "Ajout…" : "+ À la suite"}</button>`;
+  if (player === "deezer") return `<button class="q dzq" data-open="deezer" data-i="${i}">Ouvrir dans Deezer ›</button>`;
+  if (player === "music") return `<button class="q amq" data-open="music" data-i="${i}">Ouvrir dans Apple Music ›</button>`;
+  return `<button class="q" data-connect="1">Connecter Spotify pour « À la suite »</button>`;
+}
+function renderPlayer() {
+  document.querySelectorAll("#players button").forEach(b => b.classList.toggle("on", b.dataset.p === player));
+  $("#spBtn").hidden = player !== "spotify";
+  $("#dzHelp").hidden = player !== "deezer";
+  $("#follow").closest("label").hidden = !(player === "spotify" && spotify.connected);
+  const e = $("#nowEmpty");
+  if (e) e.textContent = player === "spotify" && !spotify.connected ? "Connecte Spotify pour suivre le morceau en cours, ou cherche un morceau."
+                                                                   : "Cherche le morceau qui passe pour voir quoi enchaîner.";
+}
+document.querySelectorAll("#players button").forEach(b => b.onclick = () => {
+  player = b.dataset.p; store.set("player", player); renderPlayer(); refresh();
+});
 
 function renderList(list, waiting) {
   if (!list.length) {
@@ -372,7 +392,7 @@ function renderList(list, waiting) {
         ${bars(t.energy)}
       </div>
       <div class="acts">
-        ${spotify.connected ? `<button class="q" data-q="${i}" ${adding.has(t.id) ? "disabled" : ""}>${adding.has(t.id) ? "Ajout…" : "+ À la suite"}</button>` : ""}
+        ${primaryButton(t, i)}
         <button class="pl ${playingId === t.id ? "on" : ""}" data-pl="${i}" aria-label="Écouter l'extrait">${playingId === t.id ? "■" : "▶"}</button>
         <button class="sp" data-open="spotify" data-i="${i}" aria-label="Ouvrir dans Spotify">S</button>
         <button class="dz" data-open="deezer" data-i="${i}" aria-label="Ouvrir dans Deezer">D</button>
@@ -407,6 +427,7 @@ async function openIn(app, t) {
 
 $("#list").addEventListener("click", async e => {
   const b = e.target.closest("button"); if (!b) return;
+  if (b.dataset.connect) { $("#spBtn").click(); return; }
   const list = $("#list")._data, t = list[b.dataset.q ?? b.dataset.pl ?? b.dataset.i ?? b.dataset.pick];
   if (!t) return;
   if (b.dataset.q !== undefined) {
@@ -443,7 +464,15 @@ $("#q").addEventListener("input", () => {
   const q = $("#q").value.trim();
   if (!q) { $("#results").hidden = true; return; }
   sTimer = setTimeout(async () => {
-    const res = await dzSearch(q, 15);
+    const link = q.match(/deezer\.com\/(?:[a-z]{2}\/)?track\/(\d+)/i);
+    let res;
+    if (link) {
+      const d = await dz.get(`/track/${link[1]}`);
+      res = d.id ? [slim(d)] : [];
+    } else if (/link\.deezer\.com|deezer\.page\.link/i.test(q)) {
+      $("#results").innerHTML = `<div class="empty">Lien court Deezer : ouvre-le une fois dans Safari puis copie l'adresse deezer.com/track/…, ou tape simplement le titre.</div>`;
+      $("#results")._data = []; $("#results").hidden = false; return;
+    } else res = await dzSearch(q, 15);
     $("#results").innerHTML = res.map((t, i) => `<button data-i="${i}"><img src="${esc(t.cover)}" alt=""><span>${esc(t.title)}<small>${esc(t.artist)} · ${esc(t.album)}</small></span></button>`).join("") || '<div class="empty">Aucun résultat</div>';
     $("#results")._data = res; $("#results").hidden = false;
   }, 300);
@@ -459,9 +488,9 @@ document.addEventListener("click", e => { if (!e.target.closest(".search")) $("#
 /* ---- Spotify : connexion et suivi en direct ---- */
 function renderSpotify() {
   const c = spotify.connected;
+  renderPlayer();
   $("#spBtn").textContent = c ? "Spotify connecté" : "Connecter Spotify";
   $("#spBtn").classList.toggle("on", c);
-  $("#follow").closest("label").hidden = !c;
 }
 $("#spBtn").onclick = () => {
   if (spotify.connected) { if (confirm("Déconnecter Spotify sur cet appareil ?")) { spotify.logout(); live = null; renderSpotify(); refresh(); } return; }
@@ -478,7 +507,7 @@ $("#redirectUri").textContent = location.origin + location.pathname;
 
 let lastLive = null, polling = false;
 async function pollSpotify() {
-  if (!spotify.connected || polling || document.hidden) return;
+  if (!spotify.connected || player !== "spotify" || polling || document.hidden) return;
   polling = true;
   try {
     live = await spotify.nowPlaying();

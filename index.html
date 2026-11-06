@@ -33,6 +33,16 @@
   .btn { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; cursor: pointer; font-size: 14px; }
   #spBtn { border-color: #1d5b35; color: var(--spotify); font-weight: 600; }
   #spBtn.on { background: rgba(30,215,96,.12); }
+  #spBtn[hidden] { display: none; }
+  .players { display: flex; gap: 6px; margin-top: 12px; align-items: center; flex-wrap: wrap; }
+  .players span { color: var(--muted); font-size: 13px; margin-right: 2px; }
+  .players button { background: var(--panel); border: 1px solid var(--line); border-radius: 99px; padding: 7px 14px; font-size: 14px; cursor: pointer; color: var(--muted); }
+  .players button.on[data-p="spotify"] { border-color: var(--spotify); color: var(--spotify); background: rgba(30,215,96,.1); }
+  .players button.on[data-p="deezer"] { border-color: var(--deezer); color: #d2a8ff; background: rgba(162,56,255,.14); }
+  .players button.on[data-p="music"] { border-color: var(--apple); color: var(--apple); background: rgba(250,87,193,.1); }
+  .banner.dz { background: #1f1430; border-color: #4b2a7a; color: #e3d0ff; display: block; }
+  .banner.dz[hidden] { display: none; }
+  .banner.dz b { color: #fff; }
 
   .search { position: relative; width: 100%; margin-top: 12px; }
   .search input { width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel); font-size: 16px; }
@@ -100,6 +110,8 @@
                  cursor: pointer; font-size: 13px; font-weight: 700; padding: 0 8px; }
   .acts .q { flex: 1; background: var(--spotify); border-color: var(--spotify); color: #06200f; }
   .acts .q:disabled { opacity: .6; }
+  .acts .q.dzq { background: var(--deezer); border-color: var(--deezer); color: #fff; }
+  .acts .q.amq { background: var(--apple); border-color: var(--apple); color: #2a0820; }
   .acts .pl.on { background: var(--accent); border-color: var(--accent); }
   .acts .sp { color: var(--spotify); } .acts .am { color: var(--apple); } .acts .dz { color: var(--deezer); }
 
@@ -141,13 +153,22 @@
     <h1>STREAM <span>SUGGEST</span></h1>
     <button class="btn" id="spBtn">Connecter Spotify</button>
   </header>
+  <div class="players" id="players"><span>Je joue sur :</span>
+    <button data-p="spotify">Spotify</button><button data-p="deezer">Deezer</button><button data-p="music">Apple Music</button>
+  </div>
   <div class="search">
-    <input id="q" type="search" placeholder="Chercher un morceau…" autocomplete="off" enterkeyhint="search">
+    <input id="q" type="search" placeholder="Chercher un morceau (ou coller un lien Deezer)…" autocomplete="off" enterkeyhint="search">
     <div class="results" id="results" hidden></div>
+  </div>
+  <div class="banner dz" id="dzHelp" hidden>
+    <b>Deezer :</b> cherche le morceau qui passe (ou colle son lien : Deezer › ⋯ › Partager › Copier le lien), puis
+    « Ouvrir dans Deezer » sur une suggestion et, dans Deezer, ⋯ › « Ajouter à la file d'attente ».<br>
+    <b>Deezer en direct et ajout automatique à la file :</b> Deezer ne le permet pas à un site. Fais jouer Deezer sur le Mac
+    et utilise l'appli Stream Suggest du Mac › « 📱 Téléphone ».
   </div>
   <div class="banner" id="install" hidden><span id="installText"></span><button class="btn" id="hideInstall">OK</button></div>
 
-  <section class="now" id="now"><div class="empty">Connecte Spotify pour suivre le morceau en cours, ou cherche un morceau.</div></section>
+  <section class="now" id="now"><div class="empty" id="nowEmpty">Cherche le morceau qui passe pour voir quoi enchaîner.</div></section>
 
   <div class="controls">
     <div class="seg" id="mode">

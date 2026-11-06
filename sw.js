@@ -1,5 +1,5 @@
 // Garde l'interface en cache (ouverture rapide). Les données (Deezer, Spotify) passent toujours par le réseau.
-const CACHE = "stream-suggest-v1";
+const CACHE = "stream-suggest-v2";
 const FILES = ["./", "index.html", "app.js", "analysis-worker.js", "config.js", "manifest.webmanifest", "icon-192.png", "icon-512.png", "icon-180.png"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES))); self.skipWaiting(); });
 self.addEventListener("activate", e => {
